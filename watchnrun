@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+require 'listen'
+require 'shellwords'
+
+def log(msg)
+    puts "#{Time.now} #{msg}"
+end
+
+def main
+    print_usage_and_exit! if ['-h', '--help'].include?(ARGV.first)
+    print_usage_and_exit! unless ARGV.size == 2
+
+    # Figure out which file (or directory) we should be monitoring
+    raw_monitor_filename = ARGV[0]
+    monitor_filename = File.expand_path(raw_monitor_filename)
+    unless File.exist?(monitor_filename)
+        puts "#{monitor_filename} does not exist; aborting"
+        abort
+    end
+
+    # Figure out which executable to run when the monitored file changes
+    raw_on_change_command = ARGV[1]
+    on_change_command = File.expand_path(raw_on_change_command)
+    unless File.exist?(on_change_command)
+        puts "#{on_change_command} does not exist; aborting"
+        abort
+    end
+    unless File.file?(on_change_command) && File.executable?(on_change_command)
+        puts "#{on_change_command} is not executable; aborting"
+        abort
+    end
+
+    log "Watching #{raw_monitor_filename} for changes"
+
+    # `Listen.to` can only watch for changes on directories, so if the user specified a file,
+    # we actually have to monitor its parent directory and filter changes as they happen.
+    monitor_directory = File.directory?(monitor_filename) ? monitor_filename : File.dirname(monitor_filename)
+    listener = Listen.to(monitor_directory) do |modified, added, removed|
+        unless File.directory?(monitor_filename)
+            # We have to watch a directory, but we were invoked with a filename, so check to
+            # make sure the correct file changed
+            changed_files = [modified, added, removed].flatten.map do |filename|
+                File.expand_path(filename)
+            end
+            next unless changed_files.include?(monitor_filename)
+        end
+
+        log "#{raw_monitor_filename} changed; running #{raw_on_change_command}"
+        system Shellwords.escape(on_change_command)
+    end
+
+    listener.start
+    sleep
+end
+
+def print_usage_and_exit!
+    puts "usage: #{File.basename(__FILE__)} [path to monitor] [script to run when target path changes]"
+    abort
+end
+
+main
