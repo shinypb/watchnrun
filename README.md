@@ -22,4 +22,4 @@ This is part of an elaborate [Rube Goldberg machine](https://en.wikipedia.org/wi
 * Meanwhile, an instance of `watchnrun` running inside of a detached `screen` process watches that location for changes
 * Whenever that file changes, `watchnrun` executes a script that fetches the latest version of my blog's repository from GitHub and runs `jekyll build`.
 
-If you'd like to learn more, I've written about [using GitHub webhooks with DreamHost](https://writing.markchristian.org/2019/01/25/watchnrun.html) elsewhere.
+If you'd like to learn more, I've written about [using GitHub webhooks with DreamHost](https://writing.markchristian.org/2019/01/26/watchnrun.html) elsewhere.
